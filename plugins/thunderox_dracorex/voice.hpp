@@ -1,6 +1,7 @@
 
 
 #include "oscillator.hpp"
+#include "chorus.hpp"
 #include "DistrhoPlugin.hpp"
 #include <string>
 #include <iostream>
@@ -42,17 +43,20 @@ class voice
 	
 	bool active;
 	
-	float play(float* left_buffer, float* right_buffer,  uint32_t frames);
+	float play(float*, float*,  uint32_t);
 	
 	oscillator osc1;
 	oscillator osc2;
+	float* lfo1_out;
+	float* lfo2_out;
+	chorus _chorus;
 	
 	adsr amp_env;
 	adsr wave_env;
 	adsr amp2_env;
 	adsr wave2_env;
-	adsr filter_env;
-			
+	adsr adsr3_env;
+	adsr adsr4_env;	
 	
 	float buf0_left,buf1_left;
 	float f_left, pc_left, q_left;             //filter coefficients

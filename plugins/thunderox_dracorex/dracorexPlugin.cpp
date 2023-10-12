@@ -3,7 +3,6 @@
 // DISTRHO Plugin Framework (DPF) Copyright (C) 2012-2019 Filipe Coelho <falktx@falktx.com>
 
 #include "voice.hpp"
-
 #include "DistrhoPlugin.hpp"
 #include <string.h>
 #include <string>
@@ -36,6 +35,9 @@ class dracorexPlugin : public Plugin
 		// set up voices
 		voice voices[max_notes];	
 		vector <wavetable> wavetables;
+		
+		oscillator lfo1;
+		oscillator lfo2;
 
 		// Parameters
 		float fParameters[kParameterCount+3];
@@ -121,15 +123,7 @@ class dracorexPlugin : public Plugin
 			switch (index)
 			{
 
-				case dracorex_VOLUME:
-					parameter.name   = "volume";
-					parameter.symbol = "volume";
-					parameter.hints = kParameterIsAutomatable;
-					parameter.ranges.min = 0.0f;
-					parameter.ranges.max = 1.0f;
-					parameter.ranges.def = 0.8f;
-					fParameters[dracorex_VOLUME] = parameter.ranges.def;
-					break;
+				// OSCILLATOR 1
 					
 				case dracorex_OSC1_ACTIVE:
 					parameter.name   = "osc1_active";
@@ -137,8 +131,48 @@ class dracorexPlugin : public Plugin
 					parameter.hints = kParameterIsAutomatable;
 					parameter.ranges.min = 0.0f;
 					parameter.ranges.max = 1.0f;
-					parameter.ranges.def = 1.9f;
+					parameter.ranges.def = 1.0f;
 					fParameters[dracorex_OSC1_ACTIVE] = parameter.ranges.def;
+					break;
+					
+				case dracorex_OSC1_WAVE_A:
+					parameter.name   = "osc1_wave_a";
+					parameter.symbol = "osc1_wave_a";
+					parameter.hints = kParameterIsAutomatable;
+					parameter.ranges.min = 0.0f;
+					parameter.ranges.max = 12.0f;
+					parameter.ranges.def = 0.0f;
+					fParameters[dracorex_OSC1_WAVE_A] = parameter.ranges.def;
+					break;
+					
+				case dracorex_OSC1_WAVE_B:
+					parameter.name   = "osc1_wave_b";
+					parameter.symbol = "osc1_wave_b";
+					parameter.hints = kParameterIsAutomatable;
+					parameter.ranges.min = 0.0f;
+					parameter.ranges.max = 12.0f;
+					parameter.ranges.def = 0.0f;
+					fParameters[dracorex_OSC1_WAVE_A] = parameter.ranges.def;
+					break;
+					
+				case dracorex_OSC1_TUNING:
+					parameter.name   = "osc1_tuning";
+					parameter.symbol = "osc1_tuning";
+					parameter.hints = kParameterIsAutomatable;
+					parameter.ranges.min = -7.0f;
+					parameter.ranges.max = 7.0f;
+					parameter.ranges.def = 0.0f;
+					fParameters[dracorex_OSC1_TUNING] = parameter.ranges.def;
+					break;
+					
+				case dracorex_OSC1_OCTAVE:
+					parameter.name   = "osc1_octave";
+					parameter.symbol = "osc1_octave";
+					parameter.hints = kParameterIsAutomatable;
+					parameter.ranges.min = 0.0f;
+					parameter.ranges.max = 5.0f;
+					parameter.ranges.def = 3.0f;
+					fParameters[dracorex_OSC1_OCTAVE] = parameter.ranges.def;
 					break;
 					
 				case dracorex_OSC1_VOLUME:
@@ -150,18 +184,7 @@ class dracorexPlugin : public Plugin
 					parameter.ranges.def = 0.5f;
 					fParameters[dracorex_OSC1_VOLUME] = parameter.ranges.def;
 					break;
-					
-					
-				case dracorex_OSC1_WAVE_A:
-					parameter.name   = "osc1_wave_a";
-					parameter.symbol = "osc1_wave_a";
-					parameter.hints = kParameterIsAutomatable;
-					parameter.ranges.min = 0.0f;
-					parameter.ranges.max = 12.0f;
-					parameter.ranges.def = 9.0f;
-					fParameters[dracorex_OSC1_WAVE_A] = parameter.ranges.def;
-					break;
-					
+				
 				case dracorex_AMP_ATTACK:
 					parameter.name   = "amp_attack";
 					parameter.symbol = "amp_attack";
@@ -214,8 +237,8 @@ class dracorexPlugin : public Plugin
 					break;
 					
 				case dracorex_WAVE_DECAY:
-					parameter.name   = "wave_attack";
-					parameter.symbol = "wave_attack";
+					parameter.name   = "wave_decay";
+					parameter.symbol = "wave_decay";
 					parameter.hints = kParameterIsAutomatable;
 					parameter.ranges.min = 0.0f;
 					parameter.ranges.max = 1.0f;
@@ -224,8 +247,8 @@ class dracorexPlugin : public Plugin
 					break;
 					
 				case dracorex_WAVE_SUSTAIN:
-					parameter.name   = "wave_attack";
-					parameter.symbol = "wave_attack";
+					parameter.name   = "wave_sustain";
+					parameter.symbol = "wave_sustain";
 					parameter.hints = kParameterIsAutomatable;
 					parameter.ranges.min = 0.0f;
 					parameter.ranges.max = 1.0f;
@@ -234,8 +257,8 @@ class dracorexPlugin : public Plugin
 					break;
 					
 				case dracorex_WAVE_RELEASE:
-					parameter.name   = "wave_attack";
-					parameter.symbol = "wave_attack";
+					parameter.name   = "wave_release";
+					parameter.symbol = "wave_release";
 					parameter.hints = kParameterIsAutomatable;
 					parameter.ranges.min = 0.0f;
 					parameter.ranges.max = 0.0f;
@@ -243,6 +266,70 @@ class dracorexPlugin : public Plugin
 					fParameters[dracorex_WAVE_RELEASE] = parameter.ranges.def;
 					break;
 					
+					
+					
+				// OSCILLATOR 2
+					
+				case dracorex_OSC2_ACTIVE:
+					parameter.name   = "osc2_active";
+					parameter.symbol = "osc2_active";
+					parameter.hints = kParameterIsAutomatable;
+					parameter.ranges.min = 0.0f;
+					parameter.ranges.max = 1.0f;
+					parameter.ranges.def = 0.0f;
+					fParameters[dracorex_OSC2_ACTIVE] = parameter.ranges.def;
+					break;
+					
+				case dracorex_OSC2_WAVE_A:
+					parameter.name   = "osc2_wave_a";
+					parameter.symbol = "osc2_wave_a";
+					parameter.hints = kParameterIsAutomatable;
+					parameter.ranges.min = 0.0f;
+					parameter.ranges.max = 12.0f;
+					parameter.ranges.def = 0.0f;
+					fParameters[dracorex_OSC2_WAVE_A] = parameter.ranges.def;
+					break;
+					
+				case dracorex_OSC2_WAVE_B:
+					parameter.name   = "osc2_wave_b";
+					parameter.symbol = "osc2_wave_b";
+					parameter.hints = kParameterIsAutomatable;
+					parameter.ranges.min = 0.0f;
+					parameter.ranges.max = 12.0f;
+					parameter.ranges.def = 0.0f;
+					fParameters[dracorex_OSC2_WAVE_B] = parameter.ranges.def;
+					break;
+					
+				case dracorex_OSC2_TUNING:
+					parameter.name   = "osc2_tuning";
+					parameter.symbol = "osc2_tuning";
+					parameter.hints = kParameterIsAutomatable;
+					parameter.ranges.min = -7.0f;
+					parameter.ranges.max = 7.0f;
+					parameter.ranges.def = 0.0f;
+					fParameters[dracorex_OSC2_TUNING] = parameter.ranges.def;
+					break;
+					
+				case dracorex_OSC2_OCTAVE:
+					parameter.name   = "osc2_octave";
+					parameter.symbol = "osc2_octave";
+					parameter.hints = kParameterIsAutomatable;
+					parameter.ranges.min = 0.0f;
+					parameter.ranges.max = 5.0f;
+					parameter.ranges.def = 3.0f;
+					fParameters[dracorex_OSC2_OCTAVE] = parameter.ranges.def;
+					break;
+					
+				case dracorex_OSC2_VOLUME:
+					parameter.name   = "osc2_volume";
+					parameter.symbol = "osc2_volume";
+					parameter.hints = kParameterIsAutomatable;
+					parameter.ranges.min = 0.0f;
+					parameter.ranges.max = 1.0f;
+					parameter.ranges.def = 0.5f;
+					fParameters[dracorex_OSC2_VOLUME] = parameter.ranges.def;
+					break;
+									
 					
 				case dracorex_AMP2_ATTACK:
 					parameter.name   = "amp2_attack";
@@ -296,8 +383,8 @@ class dracorexPlugin : public Plugin
 					break;
 					
 				case dracorex_WAVE2_DECAY:
-					parameter.name   = "wave2_attack";
-					parameter.symbol = "wave_2attack";
+					parameter.name   = "wave2_decay";
+					parameter.symbol = "wave2_decay";
 					parameter.hints = kParameterIsAutomatable;
 					parameter.ranges.min = 0.0f;
 					parameter.ranges.max = 1.0f;
@@ -306,8 +393,8 @@ class dracorexPlugin : public Plugin
 					break;
 					
 				case dracorex_WAVE2_SUSTAIN:
-					parameter.name   = "wave2_attack";
-					parameter.symbol = "wave2_attack";
+					parameter.name   = "wave2_sustain";
+					parameter.symbol = "wave2_sustain";
 					parameter.hints = kParameterIsAutomatable;
 					parameter.ranges.min = 0.0f;
 					parameter.ranges.max = 1.0f;
@@ -316,8 +403,8 @@ class dracorexPlugin : public Plugin
 					break;
 					
 				case dracorex_WAVE2_RELEASE:
-					parameter.name   = "wave2_attack";
-					parameter.symbol = "wave2_attack";
+					parameter.name   = "wave2_release";
+					parameter.symbol = "wave2_release";
 					parameter.hints = kParameterIsAutomatable;
 					parameter.ranges.min = 0.0f;
 					parameter.ranges.max = 0.0f;
@@ -325,36 +412,307 @@ class dracorexPlugin : public Plugin
 					fParameters[dracorex_WAVE2_RELEASE] = parameter.ranges.def;
 					break;
 					
-				case dracorex_OSC1_TUNING:
-					parameter.name   = "osc1_detne";
-					parameter.symbol = "osc1_detune";
-					parameter.hints = kParameterIsAutomatable;
-					parameter.ranges.min = -7.0f;
-					parameter.ranges.max = 7.0f;
-					parameter.ranges.def = 0.0f;
-					fParameters[dracorex_OSC1_TUNING] = parameter.ranges.def;
-					break;
+
 					
-				case dracorex_OSC2_TUNING:
-					parameter.name   = "osc2_detne";
-					parameter.symbol = "osc2_detune";
-					parameter.hints = kParameterIsAutomatable;
-					parameter.ranges.min = -7.0f;
-					parameter.ranges.max = 7.0f;
-					parameter.ranges.def = 0.0f;
-					fParameters[dracorex_OSC2_TUNING] = parameter.ranges.def;
-					break;
-					
-				case dracorex_OSC2_VOLUME:
-					parameter.name   = "osc2_volume";
-					parameter.symbol = "osc2_volume";
+				case dracorex_VOLUME:
+					parameter.name   = "volume";
+					parameter.symbol = "volume";
 					parameter.hints = kParameterIsAutomatable;
 					parameter.ranges.min = 0.0f;
 					parameter.ranges.max = 1.0f;
-					parameter.ranges.def = 0.5f;
-					fParameters[dracorex_OSC2_VOLUME] = parameter.ranges.def;
+					parameter.ranges.def = 0.8f;
+					fParameters[dracorex_VOLUME] = parameter.ranges.def;
 					break;
 					
+				// FILTER
+				
+				case dracorex_FILTER_ACTIVE:
+					parameter.name   = "filter_active";
+					parameter.symbol = "filter_active";
+					parameter.hints = kParameterIsAutomatable;
+					parameter.ranges.min = 0.0f;
+					parameter.ranges.max = 1.0f;
+					parameter.ranges.def = 0.0f;
+					fParameters[dracorex_FILTER_ACTIVE] = parameter.ranges.def;
+					break;	
+				
+				case dracorex_CUTOFF:
+					parameter.name   = "filter_cutoff";
+					parameter.symbol = "filter_cutoff";
+					parameter.hints = kParameterIsAutomatable;
+					parameter.ranges.min = 0.0f;
+					parameter.ranges.max = 1.0f;
+					parameter.ranges.def = 0.0f;
+					fParameters[dracorex_CUTOFF] = parameter.ranges.def;
+					break;		
+					
+				case dracorex_RESONANCE:
+					parameter.name   = "filter_resonance";
+					parameter.symbol = "filter_resonance";
+					parameter.hints = kParameterIsAutomatable;
+					parameter.ranges.min = 0.0f;
+					parameter.ranges.max = 1.0f;
+					parameter.ranges.def = 0.0f;
+					fParameters[dracorex_RESONANCE] = parameter.ranges.def;
+					break;			
+				
+					
+				// CHORUS
+				
+				case dracorex_CHORUS_ACTIVE:
+					parameter.name   = "chorus_active";
+					parameter.symbol = "chorus_active";
+					parameter.hints = kParameterIsAutomatable;
+					parameter.ranges.min = 0.0f;
+					parameter.ranges.max = 1.0f;
+					parameter.ranges.def = 0.0f;
+					fParameters[dracorex_CHORUS_ACTIVE] = parameter.ranges.def;
+					break;	
+					
+				// LFO 1
+				
+				case dracorex_LFO1_RETRIG:
+					parameter.name   = "lfo1_retrig";
+					parameter.symbol = "lfo1_retrig";
+					parameter.hints = kParameterIsAutomatable;
+					parameter.ranges.min = 0.0f;
+					parameter.ranges.max = 1.0f;
+					parameter.ranges.def = 0.0f;
+					fParameters[dracorex_LFO1_RETRIG] = parameter.ranges.def;
+					
+				case dracorex_LFO1_WAVE:
+					parameter.name   = "lfo1_wave";
+					parameter.symbol = "lfo1_wave";
+					parameter.hints = kParameterIsAutomatable;
+					parameter.ranges.min = 0.0f;
+					parameter.ranges.max = 12.0f;
+					parameter.ranges.def = 0.0f;
+					fParameters[dracorex_LFO1_WAVE] = parameter.ranges.def;
+					
+				case dracorex_LFO1_SPEED:
+					parameter.name   = "lfo1_speed";
+					parameter.symbol = "lfo1_speed";
+					parameter.hints = kParameterIsAutomatable;
+					parameter.ranges.min = 1.0f;
+					parameter.ranges.max = 999.0f;
+					parameter.ranges.def = 1.0f;
+					fParameters[dracorex_LFO1_SPEED] = parameter.ranges.def;
+					
+				case dracorex_LFO1_OSC1_PITCH_AMOUNT:
+					parameter.name   = "lfo1_osc1_pitch_amount";
+					parameter.symbol = "lfo1_osc1_pitch_amount";
+					parameter.hints = kParameterIsAutomatable;
+					parameter.ranges.min = 0.0f;
+					parameter.ranges.max = 1.0f;
+					parameter.ranges.def = 0.0f;
+					fParameters[dracorex_LFO1_OSC1_PITCH_AMOUNT] = parameter.ranges.def;
+					
+				case dracorex_LFO1_OSC2_PITCH_AMOUNT:
+					parameter.name   = "lfo1_osc2_pitch_amount";
+					parameter.symbol = "lfo1_osc2_pitch_amount";
+					parameter.hints = kParameterIsAutomatable;
+					parameter.ranges.min = 0.0f;
+					parameter.ranges.max = 1.0f;
+					parameter.ranges.def = 0.0f;
+					fParameters[dracorex_LFO1_OSC2_PITCH_AMOUNT] = parameter.ranges.def;
+					
+				case dracorex_LFO1_OSC1_WAVE_AMOUNT:
+					parameter.name   = "lfo1_osc2_wave_amount";
+					parameter.symbol = "lfo1_osc2_wave_amount";
+					parameter.hints = kParameterIsAutomatable;
+					parameter.ranges.min = 0.0f;
+					parameter.ranges.max = 12.0f;
+					parameter.ranges.def = 0.0f;
+					fParameters[dracorex_LFO1_OSC1_WAVE_AMOUNT] = parameter.ranges.def;
+					
+				case dracorex_LFO1_OSC2_WAVE_AMOUNT:
+					parameter.name   = "lfo1_osc2_wave_amount";
+					parameter.symbol = "lfo1_osc2_wave_amount";
+					parameter.hints = kParameterIsAutomatable;
+					parameter.ranges.min = 0.0f;
+					parameter.ranges.max = 12.0f;
+					parameter.ranges.def = 0.0f;
+					fParameters[dracorex_LFO1_OSC2_WAVE_AMOUNT] = parameter.ranges.def;
+					
+				case dracorex_LFO1_FILTER_CUTOFF_AMOUNT:
+					parameter.name   = "lfo1_filter_cutoff_amount";
+					parameter.symbol = "lfo1_filter_cutoff_amount";
+					parameter.hints = kParameterIsAutomatable;
+					parameter.ranges.min = 0.0f;
+					parameter.ranges.max = 12.0f;
+					parameter.ranges.def = 0.0f;
+					fParameters[dracorex_LFO1_FILTER_CUTOFF_AMOUNT] = parameter.ranges.def;
+					
+				// LFO 2
+				
+				case dracorex_LFO2_RETRIG:
+					parameter.name   = "lfo2_retrig";
+					parameter.symbol = "lfo2_retrig";
+					parameter.hints = kParameterIsAutomatable;
+					parameter.ranges.min = 0.0f;
+					parameter.ranges.max = 1.0f;
+					parameter.ranges.def = 0.0f;
+					fParameters[dracorex_LFO2_RETRIG] = parameter.ranges.def;
+					
+				case dracorex_LFO2_WAVE:
+					parameter.name   = "lfo2_wave";
+					parameter.symbol = "lfo2_wave";
+					parameter.hints = kParameterIsAutomatable;
+					parameter.ranges.min = 0.0f;
+					parameter.ranges.max = 12.0f;
+					parameter.ranges.def = 0.0f;
+					fParameters[dracorex_LFO2_WAVE] = parameter.ranges.def;
+					
+				case dracorex_LFO2_SPEED:
+					parameter.name   = "lfo2_speed";
+					parameter.symbol = "lfo2_speed";
+					parameter.hints = kParameterIsAutomatable;
+					parameter.ranges.min = 1.0f;
+					parameter.ranges.max = 999.0f;
+					parameter.ranges.def = 1.0f;
+					fParameters[dracorex_LFO2_SPEED] = parameter.ranges.def;
+					
+				case dracorex_LFO2_OSC1_PITCH_AMOUNT:
+					parameter.name   = "lfo2_osc1_pitch_amount";
+					parameter.symbol = "lfo2_osc1_pitch_amount";
+					parameter.hints = kParameterIsAutomatable;
+					parameter.ranges.min = 0.0f;
+					parameter.ranges.max = 1.0f;
+					parameter.ranges.def = 0.0f;
+					fParameters[dracorex_LFO2_OSC1_PITCH_AMOUNT] = parameter.ranges.def;
+					
+				case dracorex_LFO2_OSC2_PITCH_AMOUNT:
+					parameter.name   = "lfo2_osc2_pitch_amount";
+					parameter.symbol = "lfo2_osc2_pitch_amount";
+					parameter.hints = kParameterIsAutomatable;
+					parameter.ranges.min = 0.0f;
+					parameter.ranges.max = 1.0f;
+					parameter.ranges.def = 0.0f;
+					fParameters[dracorex_LFO2_OSC2_PITCH_AMOUNT] = parameter.ranges.def;
+					
+				case dracorex_LFO2_OSC1_WAVE_AMOUNT:
+					parameter.name   = "lfo2_osc2_wave_amount";
+					parameter.symbol = "lfo2_osc2_wave_amount";
+					parameter.hints = kParameterIsAutomatable;
+					parameter.ranges.min = 0.0f;
+					parameter.ranges.max = 12.0f;
+					parameter.ranges.def = 0.0f;
+					fParameters[dracorex_LFO2_OSC1_WAVE_AMOUNT] = parameter.ranges.def;
+					
+				case dracorex_LFO2_OSC2_WAVE_AMOUNT:
+					parameter.name   = "lfo2_osc2_wave_amount";
+					parameter.symbol = "lfo2_osc2_wave_amount";
+					parameter.hints = kParameterIsAutomatable;
+					parameter.ranges.min = 0.0f;
+					parameter.ranges.max = 12.0f;
+					parameter.ranges.def = 0.0f;
+					fParameters[dracorex_LFO2_OSC2_WAVE_AMOUNT] = parameter.ranges.def;
+					
+				case dracorex_LFO2_FILTER_CUTOFF_AMOUNT:
+					parameter.name   = "lfo2_filter_cutoff_amount";
+					parameter.symbol = "lfo2_filter_cutoff_amount";
+					parameter.hints = kParameterIsAutomatable;
+					parameter.ranges.min = 0.0f;
+					parameter.ranges.max = 12.0f;
+					parameter.ranges.def = 0.0f;
+					fParameters[dracorex_LFO2_FILTER_CUTOFF_AMOUNT] = parameter.ranges.def;
+									
+					
+				case dracorex_FILTER_ADSR3_AMOUNT:
+					parameter.name   = "filter_adsr3_amount";
+					parameter.symbol = "filter_adse3_amount";
+					parameter.hints = kParameterIsAutomatable;
+					parameter.ranges.min = 0.0f;
+					parameter.ranges.max = 1.0f;
+					parameter.ranges.def = 0.0f;
+					fParameters[dracorex_FILTER_ADSR3_AMOUNT] = parameter.ranges.def;
+					break;		
+					
+					
+
+					
+				case dracorex_ADSR3_ATTACK:
+					parameter.name   = "adsr3_attack";
+					parameter.symbol = "adsr3_attack";
+					parameter.hints = kParameterIsAutomatable;
+					parameter.ranges.min = 0.0f;
+					parameter.ranges.max = 1.0f;
+					parameter.ranges.def = 1.0f;
+					fParameters[dracorex_ADSR3_ATTACK] = parameter.ranges.def;
+					break;	
+					
+				case dracorex_ADSR3_SUSTAIN:
+					parameter.name   = "adsr3_sustain";
+					parameter.symbol = "adsr3_sustain";
+					parameter.hints = kParameterIsAutomatable;
+					parameter.ranges.min = 0.0f;
+					parameter.ranges.max = 1.0f;
+					parameter.ranges.def = 0.0f;
+					fParameters[dracorex_ADSR3_SUSTAIN] = parameter.ranges.def;
+					break;	
+					
+				case dracorex_ADSR3_DECAY:
+					parameter.name   = "adsr3_decay";
+					parameter.symbol = "adsr3_decay";
+					parameter.hints = kParameterIsAutomatable;
+					parameter.ranges.min = 0.0f;
+					parameter.ranges.max = 1.0f;
+					parameter.ranges.def = 0.0f;
+					fParameters[dracorex_ADSR3_DECAY] = parameter.ranges.def;
+					break;	
+					
+				case dracorex_ADSR3_RELEASE:
+					parameter.name   = "adsr3_release";
+					parameter.symbol = "adsr3_release";
+					parameter.hints = kParameterIsAutomatable;
+					parameter.ranges.min = 0.0f;
+					parameter.ranges.max = 1.0f;
+					parameter.ranges.def = 1.0f;
+					fParameters[dracorex_ADSR3_RELEASE] = parameter.ranges.def;
+					break;	
+					
+					
+					
+					
+				case dracorex_ADSR4_ATTACK:
+					parameter.name   = "adsr4_attack";
+					parameter.symbol = "adsr4_attack";
+					parameter.hints = kParameterIsAutomatable;
+					parameter.ranges.min = 0.0f;
+					parameter.ranges.max = 1.0f;
+					parameter.ranges.def = 1.0f;
+					fParameters[dracorex_ADSR4_ATTACK] = parameter.ranges.def;
+					break;	
+					
+				case dracorex_ADSR4_SUSTAIN:
+					parameter.name   = "adsr4_sustain";
+					parameter.symbol = "adsr4_sustain";
+					parameter.hints = kParameterIsAutomatable;
+					parameter.ranges.min = 0.0f;
+					parameter.ranges.max = 1.0f;
+					parameter.ranges.def = 0.0f;
+					fParameters[dracorex_ADSR4_SUSTAIN] = parameter.ranges.def;
+					break;	
+					
+				case dracorex_ADSR4_DECAY:
+					parameter.name   = "adsr4_decay";
+					parameter.symbol = "adsr4_decay";
+					parameter.hints = kParameterIsAutomatable;
+					parameter.ranges.min = 0.0f;
+					parameter.ranges.max = 1.0f;
+					parameter.ranges.def = 0.0f;
+					fParameters[dracorex_ADSR4_DECAY] = parameter.ranges.def;
+					break;	
+					
+				case dracorex_ADSR4_RELEASE:
+					parameter.name   = "adsr4_release";
+					parameter.symbol = "adsr4_release";
+					parameter.hints = kParameterIsAutomatable;
+					parameter.ranges.min = 0.0f;
+					parameter.ranges.max = 1.0f;
+					parameter.ranges.def = 1.0f;
+					fParameters[dracorex_ADSR4_RELEASE] = parameter.ranges.def;
+					break;	
 			}
 
 		}
@@ -486,8 +844,10 @@ class dracorexPlugin : public Plugin
 					voices[current_voice].osc2.note = note;
 					voices[current_voice].osc1.frequency = fastishP2F(note);
 					voices[current_voice].osc2.frequency = fastishP2F(note);
-					voices[current_voice].filter_env.state = ENV_STATE_ATTACK;
-					voices[current_voice].filter_env.level = 0;
+					voices[current_voice].adsr3_env.state = ENV_STATE_ATTACK;
+					voices[current_voice].adsr3_env.level = 0;
+					voices[current_voice].adsr4_env.state = ENV_STATE_ATTACK;
+					voices[current_voice].adsr4_env.level = 0;
 					
 				}
 				
@@ -503,7 +863,8 @@ class dracorexPlugin : public Plugin
 							voices[x].wave_env.state = ENV_STATE_RELEASE;
 							voices[x].amp2_env.state = ENV_STATE_RELEASE;
 							voices[x].wave2_env.state = ENV_STATE_RELEASE;
-							voices[x].filter_env.state = ENV_STATE_RELEASE;
+							voices[x].adsr3_env.state = ENV_STATE_RELEASE;
+							voices[x].adsr4_env.state = ENV_STATE_RELEASE;
 							keys[note] = -1;
 						}
 					}
@@ -520,6 +881,29 @@ class dracorexPlugin : public Plugin
 			memset( out_left, 0, sizeof(double)*(frames*0.5) );
 			memset( out_right, 0, sizeof(double)*(frames*0.5) );
 			
+			lfo1.frequency = fParameters[dracorex_LFO1_SPEED] / 300.0;
+			lfo2.frequency = fParameters[dracorex_LFO2_SPEED] / 300.0;
+			
+
+			lfo1.wave_a = wavetables[ fParameters[dracorex_LFO1_WAVE] ].buffer;
+			lfo1.wave_b = wavetables[ fParameters[dracorex_LFO1_WAVE] ].buffer;
+			lfo1.wave_mix = 0;
+			lfo1.note = 0;
+			
+			lfo2.wave_a = wavetables[ fParameters[dracorex_LFO2_WAVE] ].buffer;
+			lfo2.wave_b = wavetables[ fParameters[dracorex_LFO2_WAVE] ].buffer;
+			lfo2.wave_mix = 0;
+			lfo2.note = 0;
+			
+			float lfo1_out[frames];
+			float lfo2_out[frames];
+			
+			for (uint32_t x=0; x<frames; x++)
+			{
+				lfo1_out[x] = lfo1.tick();
+				lfo2_out[x] = lfo2.tick();
+			}
+					
 			int wn1_a = fParameters[dracorex_OSC1_WAVE_A];
 			int wn1_b = fParameters[dracorex_OSC1_WAVE_B];
 			
@@ -530,17 +914,18 @@ class dracorexPlugin : public Plugin
 			{		
 				voices[v].osc1.wave_a = wavetables[wn1_a].buffer;
 				voices[v].osc1.wave_b = wavetables[wn1_b].buffer;
-				voices[v].osc1.wave_mix = fParameters[dracorex_OSC1_PITCH_ADSR2];
+				voices[v].osc1.wave_mix = 0;
 				
 				voices[v].osc2.wave_a = wavetables[wn2_a].buffer;
 				voices[v].osc2.wave_b = wavetables[wn2_b].buffer;
-				voices[v].osc2.wave_mix = fParameters[dracorex_OSC2_PITCH_ADSR2];
-			
+				voices[v].osc2.wave_mix = 0;
+				
+				voices[v].lfo1_out = &lfo1_out[0];
+				voices[v].lfo2_out = &lfo2_out[0];
+							
 				voices[v].play(out_left, out_right, frames);
 			}
 			
-
-
 		}
 
 
@@ -566,6 +951,11 @@ Plugin* createPlugin()
 
 	dracorexPlugin* dracorex = new dracorexPlugin();
 	
+	dracorex->lfo1.wave_mix = 0;
+	dracorex->lfo2.wave_mix = 0;
+	dracorex->lfo1.frequency = 1;
+	dracorex->lfo2.frequency = 1;	
+	
 	// LOAD WAVETABLES;
 
 	string user_path = getenv("USER");
@@ -573,6 +963,7 @@ Plugin* createPlugin()
 	stringstream wave_file;
 	struct dirent *d;
 	struct stat st;
+	long length;
 
 	DIR *dr;
 	wave_path.str("");
@@ -589,10 +980,10 @@ Plugin* createPlugin()
 
 			FILE* fp = fopen (wave_file.str().c_str(),"r");
 			fseek(fp, 0, SEEK_END); // We can use rewind(fp); also
-				
-			if (ftell(fp) == 17720)
+			
+			if (ftell(fp) == 35360 )
 			{					
-				long length = (ftell(fp) - 80 )/ 4;
+				length = (ftell(fp) - 80 )/ 4;
 				
 				wavetable new_waveform;
 					
@@ -604,6 +995,8 @@ Plugin* createPlugin()
 				fseek(fp, 80, SEEK_SET);
 				fread(source_waveform_buffer ,1, length*sizeof(float), fp);
 				fclose(fp);	
+				
+				
 			
 								
 				//------ FILTER 8 DIFFERENT VERSINS OF WAVEFORM TO REDUCE ALIASING
@@ -614,18 +1007,19 @@ Plugin* createPlugin()
 
 				// Set coefficients given frequency & resonance [0.0...1.0]
 				
-				float frequency = 0.5;
+				float frequency = 0.8;
 				float resonance = 0;	
 				float in;
 
-
-				for (int wave=0; wave<12; wave++)
+				for (int wave=1; wave<12; wave++)
 				{
 				
 					float minpeak = 0;
 					float maxpeak = 0;
 					float maxvol = 0;
-				
+					
+					in = 0;
+					
 					for (int x=0; x<length; x++)
 					{
 						in = source_waveform_buffer[x];
@@ -664,17 +1058,16 @@ Plugin* createPlugin()
 						new_waveform.buffer[y+(wave*length)] = new_waveform.buffer[y+(wave*length)]*amp;
 					}
 
-					if (wave < 6) frequency /= 1.4;
-						else frequency /= 2.4;
-				}
-			new_waveform.length = length;
-			new_waveform.name = d->d_name;
-			
+					frequency /= 2.4;	
+			}
+				
 			for (int x=0; x<length; x++)
 			{
 				new_waveform.buffer[x] = source_waveform_buffer[x] * 0.8;
-				//memcpy(new_waveform.buffer,source_waveform_buffer,length*sizeof(float));
 			}		
+			
+			new_waveform.length = length;
+			new_waveform.name = d->d_name;
 			dracorex->wavetables.push_back(new_waveform);
 			free(source_waveform_buffer);
 			}
@@ -685,10 +1078,15 @@ Plugin* createPlugin()
 	for (int v=0; v<max_notes; v++)
 	{
 		dracorex->voices[v].osc1.sample_rate = dracorex->getSampleRate();
+		dracorex->voices[v].osc1.length = length;
 		dracorex->voices[v].osc2.sample_rate = dracorex->getSampleRate();
+		dracorex->voices[v].osc2.length = length;
 		dracorex->voices[v].fParameters = dracorex->fParameters;
-	
+		dracorex->lfo1.length = length;
+		dracorex->lfo2.length = length;
 	}
+	
+	
 	
 	struct alphasort_wavetables
 	{
